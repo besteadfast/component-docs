@@ -6,150 +6,117 @@ import Modal from '../../components/Modal.vue'
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit
 
-## Basic Example
+## The Basics
 
-To use the component, just pass in the content as props to the Modal tag:
+The implementation of the modal component has two parts: the modal and a button to trigger it. The modal itself can be created using the `<modal>` tag with a `modalId` and passing content into its slot.
 
 ```twig
-<modal
-    title="Test Title"
-    open-label="Open Modal"
-    close-label="Close Modal"
-/>
+<modal modal-id="exampleModal">
+    //Modal Content
+</modal>
 ```
 
-Here's what that should look like:
+You can do the button however you want, as long as it has the `openModal` method as a click handler and is passed the corresponding `modalId`.
+
+```twig
+<button @click="$store.modal.openModal('exampleModal)'> Open Modal </button>
+```
+
+The modal state is managed globally, via `$store.modal.activeModalId`, and a given modal will be shown when the value of `activeModalId` matches its `modalId`.
+Here's what the modal looks like by default:
+
+<div style="display:flex; justify-content:center; padding:40px;">
 <Modal
-    title="Test Title"
-    openLabel="Open Modal"
-    closeLabel="Close Modal"
+    modal-id="exampleModal"
 />
+<button @click="$modals.openModal('exampleModal')">Open Modal</button>
 
-## Functionality
+</div>
 
-If you are modifying the styled component, the following are the props that can be passed into the base component to alter its funcitonality.
+## Adding Custom Content
 
-### hasOverscroll <Pill label="Prop" />
+By default, the component only has a default slot where the displayed content of the modal should go. Make sure to use `<DialogTitle>` and `<DialogDescription>` if possible to ensure the modal is as accessible as possible.
 
-- **Type:** Boolean
-- **Default:** true
+For example, if you needed to display content in two columns, you could do something like this:
 
-This option toggles whether the modal scrolls or expands when content extends past the default size.
+```vue
+<modal modal-id="exampleModal">
+    <div class="modal-body">
+        <DialogTitle>Title</DialogTitle>
+        <DialogDescription> Description </DialogDescription>
+        <div class="two-columns">
+            <div id="column1">
+                <p>Column 1 content</p>
+            </div>
+            <div id="column2">
+                <p>Column 2 content</p>
+            </div>
+        </div>
+    </div>
+</modal>
+```
 
-### initialFocus <Pill label="Prop" />
+## Managing Overscroll
 
-- **Type:** String
-- **Default:** 'closeButtonRef'
+The `hasOverscroll` prop on the `modal` component decides whether the modal's panel extends or scrolls when the content is too long
 
-This sets the ref that will focus when the modal is opened. By default, it focuses the element with `ref="closeButtonRef"`
+<div style="display:flex; justify-content:center; padding:40px;">
+<Modal
+    modal-id="exampleOverscrollModal"
+    hasOverscroll
+>
+    <div class="p-s9">
+    <div class="h-[900px]">
+    Starting Text
+    </div>
+    <div>
+    Ending Text
+    </div>
+    </div>
+</Modal>
+<button @click="$modals.openModal('exampleOverscrollModal')" class=" px-s3 py-s2 rounded-[5px] border-[1px] border-solid border-gray-200">Open Modal</button>
 
-## Styling
+</div>
 
-If you are modifying the styled component, the following are the props that can be passed into the base component to alter its styles.
+## Setting initial focus
 
-### bgClasses <Pill label="Prop" />
+By default, the modal will focus its first interactable element. If there are none in your content, the close button will be focused by default.
 
-- **Type:** String
-- **Default:** true
+::: warning
+Changing this isn't as simple as it seems off-hand. HeadlessUI's `initialFocus` ref-based solution doesn't work with slots, so you may have to set the initially focused element manually
+:::
 
-This prop provides tailwind classes to style the background behind the main dialog panel
+## Multiple modals
 
-### containerClasses <Pill label="Prop" />
+Having multiple modals on the same page is as simple as defining the modals with unique IDs and creating open buttons that target the correct ID
 
-- **Type:** Boolean
-- **Default:** true
+## Hooking into modal open and close
 
-This prop provides tailwind classes to define the style of the container div that encapsulates the dialog panel. This is unlikely to require a change.
-
-### panelClasses <Pill label="Prop" />
-
-- **Type:** Boolean
-- **Default:** true
-
-This prop provides tailwind classes to define the style of the dialog panel
-
-### transitions <Pill label="Prop" />
-
-- **Type:** Object
-- **Default:**
+Since state management occurs globally, you will have to modify the declaration of the `openModal` & `closeModal` functions to add any necessary sideeffects of opening/closing the modal
 
 ```js
-{
-    enter: 'duration-200 ease-out',
-    enterFrom: 'opacity-0',
-    enterTo: 'opacity-100',
-    leave: 'duration-200 ease-in',
-    leaveFrom: 'opacity-100',
-    leaveTo: 'opacity-0'
-}
-```
-
-This option controls the transition when opening/closing the modal. See HeadlessUI's TransitionRoot for more information.
-
-## Content
-
-If you are modifying the styled component, the following are the slots into which content can be passed to alter content areas.
-
-### open <Pill label="slot" />
-
-Content for the open button for the modal. Make sure to pass the "open" function into the trigger button
-
-```vue
-<template #open="{ open }">
-  <button
-    @click="open"
-    type="button"
-    class="mt-s2 py-s2 px-s3 rounded border-solid border-[1px] border-white/0 bg-[var(--vp-c-bg-soft)] text-[var(--vp-button-alt-text)] hover:border-[var(--vp-c-brand-1)] transition"
-    aria-label="Open modal"
-  >
-    {{ openLabel }}
-  </button>
-</template>
-```
-
-### close <Pill label="slot" />
-
-Content for the open button for the modal. Make sure to pass the "close" function into the trigger button.
-
-```vue
-<template #close="{ close }">
-  <button
-    ref="closeButtonRef"
-    class="absolute top-s8 right-s8"
-    @click="close"
-    type="button"
-    aria-label="Close modal"
-  >
-    {{ closeLabel }}
-  </button>
-</template>
-```
-
-### content <Pill label="slot" />
-
-Content for the dialog panel. This is where you are likely to include `DialogTitle` and `DialogDescription` (see Accessibility Notes for more info)
-
-```vue
-<template>
-  <div class="modal-body">
-    <div class="px-s8 py-s10 border-t-2 border-gray-200 group">
-      <DialogTitle>{{ title }}</DialogTitle>
-      <DialogDescription> Description </DialogDescription>
-      <p>Other Body content</p>
-    </div>
-  </div>
-</template>
+//main.js
+const modals = reactive({
+  closeModal: () => {
+    modals.activeModalId = null;
+    //do stuff
+  },
+  openModal: (id) => {
+    modals.activeModalId = id;
+    //do stuff
+  },
+  activeModalId: null,
+});
 ```
 
 ## Accessibility Notes
 
 - **Opening the modal**
   - When the modal opens, focus is trapped within the modal
-  - When the modal opens, the close button is focused by default
-    - The focused element can set with the initialFocus prop
+  - When the modal opens, the first focusable element is focused by default
 - **The modal**
-  - DialogTitle
-  - DialogDescription
+  - `<DialogTitle>` - A pre-loaded component that sets the title of the modal
+  - `<DialogDescription>` - A pre-loaded component that sets a description of the modal
 - **Closing the modal**
   - Pressing esc closes the modal
   - Clicking outside of the modal panel closes the modal

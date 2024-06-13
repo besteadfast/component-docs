@@ -1,6 +1,7 @@
+import { interactVariantPlugin } from './.vitepress/theme/interact.mjs';
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ['./src/*.md', './components/**/*.vue'],
+  content: ['./src/**/*.md', './components/**/*.vue'],
   theme: {
     extend: {},
     colors: {
@@ -99,5 +100,5 @@ module.exports = {
       1: '1px',
     }),
   },
-  plugins: [],
+  plugins: [interactVariantPlugin],
 };

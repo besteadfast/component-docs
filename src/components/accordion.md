@@ -1,93 +1,133 @@
 <script setup>
 import Accordion from '../../components/Accordion.vue'
+import AccordionItem from '../../components/AccordionItem.vue'
 import Pill from '../../components/Pill.vue';
 </script>
 
 # Accordion
 
-## Basic Example
+## Basic Usage
+
+The accordion component is composed of a parent `Accordion` and a slot containing any number of `AccordionItem` children.
 
 ```twig
 <accordion>
-    <template #title>
-        Test Accordion
-    </template>
-    <template #icon>
-        <svg></svg>
-    </template>
-    <template #content>
-        Test Content
-    </template>
+    <accordion-item />
+    <accordion-item />
 </accordion>
 ```
 
+That bare-bones example renders like so:
+
 <div>
 <Accordion>
-    <template #title>
-        Test Accordion
-    </template>
-    <template #icon>
-    <svg fill="#000000" height="15px" width="15px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-	 viewBox="0 0 330 330" xml:space="preserve">
-<path id="XMLID_225_" d="M325.607,79.393c-5.857-5.857-15.355-5.858-21.213,0.001l-139.39,139.393L25.607,79.393
-	c-5.857-5.857-15.355-5.858-21.213,0.001c-5.858,5.858-5.858,15.355,0,21.213l150.004,150c2.813,2.813,6.628,4.393,10.606,4.393
-	s7.794-1.581,10.606-4.394l149.996-150C331.465,94.749,331.465,85.251,325.607,79.393z"/>
-</svg>
-    </template>
-    <template #content>
-        Test Content
-    </template>
-
+    <AccordionItem></AccordionItem>
+    <AccordionItem></AccordionItem>
 </Accordion>
 </div>
 
-## Functionality
+## Adding Custom Content
 
-## Styling
+Out of the box, each `<AccordionItem>` has multiple slots that allow for custom content
 
-### containerClasses <Pill label="Prop" />
+### Button <Pill label="slot" />
 
-- Type: String
-- Default: "border-x border-b border-gray-200 first:rounded-t last:rounded-b first:border-t "
+The Button slot controls the content of the `summary` element, including the title and icon. By default, the entire button content must be passed into the slot when overwriting the default content
 
-### buttonClasses <Pill label="Prop" />
-
-- Type: String
-- Default: "flex justify-between items-center w-full px-s4 py-s2 bg-transparent interact:bg-blue-100 interact:outline-none transition duration-300"
-
-### panelClasses <Pill label="Prop" />
-
-- Type: String
-- Default: "p-s4"
-
-### iconClasses <Pill label="Prop" />
-
-- Type: String
-- Default: "rotate-0 transition duration-300"
-
-### iconTransitionClasses <Pill label="Prop" />
-
-- Type: String
-- Default: "rotate-180 transition duration-300"
-
-### transitions <Pill label="Prop" />
-
-- **Type:** Object
-- **Default:**
-
-```js
-{
-    enter: 'duration-200 ease-out',
-    enterFrom: 'opacity-0',
-    enterTo: 'opacity-100',
-    leave: 'duration-200 ease-in',
-    leaveFrom: 'opacity-100',
-    leaveTo: 'opacity-0'
-}
+```twig
+...
+<template #button>
+    New Accordion Title
+    <div
+        class="transition duration-300"
+        :class="open ? 'rotate-0' : 'rotate-45'"
+    >
+        <Icon name="plus">
+    </div>
+</template>
+...
 ```
 
-This option controls the transition when opening/closing the accordion.
+If you want to modify parts separately or keep parts (e.g. the icon) the same across instances, you just have to limit the scope of the slot in `AccordionItem.vue`, like so:
 
-## Content
+```vue
+...
+<slot name="button-title"></slot>
+<div class="transition duration-300" :class="open ? 'rotate-0' : 'rotate-180'">
+    <Icon name="chevron" />
+</div>
+...
+```
+
+### Content <Pill label="slot" />
+
+This slot contains the content pane of the accordion.
+
+## Controlling the state of the accordion
+
+### defaultOpen <Pill label="slot" />
+
+Setting the default state of an accordion (i.e. which of its children are open) is as simple as setting the `defaultOpen` prop to an array containing the open items' indexes
+
+```vue
+//Open the first accordion item by default
+<Accordion :defaultOpen="[0]">
+    <AccordionItem />
+</Accordion>
+```
+
+:::info
+This is overridden by [state found in the url](#maintaining-state-on-reload) by default
+:::
+
+### exclusiveOpen <Pill label="prop" />
+
+In many cases, you will want to allow only one accordion item to be open at a time. Setting the `exclusiveOpen` prop to true will cause the accordion to automatically close any other items when a new one is opened.
+
+### scrollOnOpen <Pill label="prop" />
+
+In some cases (e.g. when each accordion item contains a lot of content), you may want to have the viewport scroll to an accordion item when it opens. Setting the `scrollOnOpen` prop to true will scroll to 20px above the element by default.
+
+:::warning
+This does not play nicely with `exclusiveOpen`. The way it is currently set up, if another element closes while the scroll is occurring, the viewport will be out of position when it reaches the destination. This could be handled by a delaying the scroll, and an `isOpening` state has been added to the component that could be used to handle this.
+:::
+
+## Maintaining state on reload
+
+Whenever an item is opened/closed, the state of the component is pushed to a query parameter in the url, in the form "accordion-<em>ID</em>=0,1", where ID is the id of the accordion and the value of the query parameter is a comma-separated list of the currently open items of that accordion. On page load, the state of each accordion is loaded from its corresponding query parameter, if possible.
+
+:::info
+This value overrides the [defaultOpen](#defaultopen) by default.
+:::
+
+## Hooking into accordion open and close
+
+This copmponent already utilizes the closing process to animate the height, so we've included `isOpening` and `isClosing` state to each accordion item that could be used to execute side-effects when an item starts a change, is undergoing a change, or finishes a change of state.
+
+```js
+onMounted(() => {
+    ...
+    accPanelRef.value.addEventListener('transitionend', (e) => {
+        if (isClosing.value) {
+            isClosing.value = false;
+            // item has finished closing
+        }
+        else if (isOpening.value) {
+            isOpening.value = false;
+            // item has finished opening
+        }
+    });
+})
+...
+watch(open, (open, oldOpen) => {
+    if(open){
+        isOpening.value = true
+        // item has started opening
+    } else {
+        isClosing.value = true
+        // item has started closing
+    }
+})
+```
 
 ## Accessibility Notes
